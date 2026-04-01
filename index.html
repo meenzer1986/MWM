@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grill Fleisch Quartett 1080x1350 ohne Header</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --panel:#1b1b1b; --panel-2:#232323; --line:#373737; --text:#f5f1e8; --muted:#b5aea0; --gold:#d6a33a; --gold-2:#f0c86a; --radius:20px; --shadow:0 14px 40px rgba(0,0,0,.35); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,system-ui,sans-serif; background:radial-gradient(circle at top right, rgba(214,163,58,.14), transparent 26%), linear-gradient(180deg, #0e0e0e, #151515 50%, #101010); color:var(--text); min-height:100vh; }
+    .app { display:grid; grid-template-columns:380px minmax(320px,1fr); gap:24px; max-width:1500px; margin:0 auto; padding:24px; }
+    .panel { background:rgba(27,27,27,.95); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius); box-shadow:var(--shadow); backdrop-filter:blur(10px); }
+    .controls { padding:22px; position:sticky; top:20px; height:fit-content; }
+    h1 { font-family:Oswald,Impact,sans-serif; letter-spacing:.04em; text-transform:uppercase; margin:0 0 10px; font-size:2rem; line-height:1; }
+    .intro { color:var(--muted); font-size:.96rem; margin-bottom:20px; }
+    .group { margin-bottom:18px; }
+    label { display:block; margin-bottom:8px; font-size:.84rem; text-transform:uppercase; letter-spacing:.08em; color:var(--gold-2); font-weight:700; }
+    input, textarea { width:100%; border:1px solid var(--line); background:var(--panel-2); color:var(--text); border-radius:14px; padding:12px 14px; font:inherit; }
+    textarea { resize:vertical; min-height:72px; }
+    .stats-grid { display:grid; gap:12px; }
+    .stat-row { background:#171717; border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:12px; }
+    .stat-row .top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .stat-row input[type="range"] { padding:0; accent-color:var(--gold); }
+    .stat-row .value { min-width:48px; text-align:right; font-weight:700; color:var(--gold-2); }
+    .actions { display:grid; gap:10px; margin-top:20px; }
+    button { border:0; border-radius:14px; padding:14px 16px; font-weight:800; cursor:pointer; }
+    .primary { background:linear-gradient(180deg, var(--gold-2), var(--gold)); color:#1c1404; }
+    .secondary { background:#2a2a2a; color:var(--text); border:1px solid rgba(255,255,255,.08); }
+    .hint { margin-top:12px; color:var(--muted); font-size:.86rem; }
+    .preview-wrap { display:grid; place-items:center; min-height:80vh; padding:20px; }
+    .card-shell { width:min(100%, 620px); }
+    canvas { width:100%; height:auto; aspect-ratio:4/5; border-radius:28px; box-shadow:0 24px 60px rgba(0,0,0,.45); background:#101010; }
+    .footer-note { margin-top:16px; color:var(--muted); font-size:.85rem; text-align:center; }
+    @media (max-width:1040px) { .app { grid-template-columns:1fr; } .controls { position:static; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel controls">
+      <h1>Grill Quartett</h1>
+      <p class="intro">Oben wurde der Titel auf der Karte entfernt, damit mehr Platz für Bild und Inhalte bleibt.</p>
+      <div class="group"><label for="imageUpload">Bild</label><input id="imageUpload" type="file" accept="image/*" /></div>
+      <div class="group"><label for="title">Fleisch / Cut</label><input id="title" type="text" value="Ribeye Steak" /></div>
+      <div class="group"><label for="seller">Verkäufer</label><input id="seller" type="text" value="Metzgerei Beispiel" /></div>
+      <div class="group"><label for="price">Preis</label><input id="price" type="text" value="8,99 € / 100 g" /></div>
+      <div class="group"><label for="origin">Herkunft</label><input id="origin" type="text" value="Deutschland" /></div>
+      <div class="group"><label for="note">Kurznotiz</label><textarea id="note">Starker Beef-Geschmack, schöne Kruste, ideal medium rare.</textarea></div>
+      <div class="group"><label>Werte</label><div id="stats" class="stats-grid"></div></div>
+      <div class="actions">
+        <button class="primary" id="downloadJpeg">Als JPEG speichern</button>
+        <button class="secondary" id="resetDemo">Demo-Werte laden</button>
+      </div>
+      <p class="hint">Export: 1080 × 1350 px als JPEG für Instagram-Feedposts.</p>
+    </aside>
+    <main class="preview-wrap">
+      <div class="card-shell">
+        <canvas id="cardCanvas" width="1080" height="1350"></canvas>
+        <p class="footer-note">Version ohne oberen Kartentitel.</p>
+      </div>
+    </main>
+  </div>
+  <script>
+    const statConfig = [
+      { key: 'preisleistung', label: 'Preis-Leistung', value: 8, color: '#d6a33a' },
+      { key: 'geschmack', label: 'Geschmack', value: 9, color: '#c66a2b' },
+      { key: 'zartheit', label: 'Zartheit', value: 8, color: '#8b3a2e' },
+      { key: 'saftigkeit', label: 'Saftigkeit', value: 9, color: '#4f8a4b' },
+      { key: 'grillbarkeit', label: 'Grillbarkeit', value: 7, color: '#7a5cff' },
+      { key: 'optik', label: 'Optik', value: 8, color: '#2c88b8' }
+    ];
+    const $ = id => document.getElementById(id);
+    const statsWrap = $('stats');
+    const canvas = $('cardCanvas');
+    const ctx = canvas.getContext('2d');
+    let uploadedImage = null;
+
+    function buildStatControls() {
+      statsWrap.innerHTML = '';
+      statConfig.forEach((stat) => {
+        const row = document.createElement('div');
+        row.className = 'stat-row';
+        row.innerHTML = `<div class="top"><strong>${stat.label}</strong><span class="value" id="value-${stat.key}">${stat.value}/10</span></div><input type="range" min="0" max="10" step="1" value="${stat.value}" data-key="${stat.key}" />`;
+        statsWrap.appendChild(row);
+      });
+      statsWrap.querySelectorAll('input[type="range"]').forEach((input) => {
+        input.addEventListener('input', (e) => {
+          const stat = statConfig.find(s => s.key === e.target.dataset.key);
+          stat.value = Number(e.target.value);
+          $('value-' + stat.key).textContent = stat.value + '/10';
+          drawCard();
+        });
+      });
+    }
+
+    function roundedRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    function drawImageCover(img, x, y, w, h) {
+      const imgRatio = img.width / img.height;
+      const boxRatio = w / h;
+      let drawW, drawH, dx, dy;
+      if (imgRatio > boxRatio) { drawH = h; drawW = h * imgRatio; dx = x - (drawW - w) / 2; dy = y; }
+      else { drawW = w; drawH = w / imgRatio; dx = x; dy = y - (drawH - h) / 2; }
+      ctx.drawImage(img, dx, dy, drawW, drawH);
+    }
+
+    function defaultImageArea(x, y, w, h) {
+      const grad = ctx.createLinearGradient(x, y, x + w, y + h);
+      grad.addColorStop(0, '#3b2416'); grad.addColorStop(1, '#161616');
+      ctx.fillStyle = grad; roundedRect(x, y, w, h, 34); ctx.fill();
+      ctx.fillStyle = '#f0c86a'; ctx.font = '700 54px Oswald'; ctx.fillText('DEIN FOTO', x + 40, y + h / 2 - 8);
+      ctx.fillStyle = 'rgba(245,241,232,.8)'; ctx.font = '500 28px Inter'; ctx.fillText('Hier erscheint dein Grillfleisch-Bild', x + 40, y + h / 2 + 34);
+    }
+
+    function wrapText(text, x, y, maxWidth, lineHeight, maxLines = 3) {
+      const words = text.split(/\s+/).filter(Boolean);
+      const lines = [];
+      let current = '';
+      for (let i = 0; i < words.length; i++) {
+        const test = current ? current + ' ' + words[i] : words[i];
+        if (ctx.measureText(test).width <= maxWidth) current = test;
+        else {
+          if (current) lines.push(current);
+          current = words[i];
+          if (lines.length === maxLines - 1) break;
+        }
+      }
+      if (current && lines.length < maxLines) lines.push(current);
+      const full = words.join(' ');
+      const shown = lines.join(' ');
+      if (shown.length < full.length && lines.length) {
+        let last = lines[lines.length - 1];
+        while (ctx.measureText(last + '…').width > maxWidth && last.length > 0) last = last.slice(0, -1);
+        lines[lines.length - 1] = last.replace(/[\s.,;:!?-]+$/,'') + '…';
+      }
+      lines.slice(0, maxLines).forEach((line, idx) => ctx.fillText(line, x, y + idx * lineHeight));
+    }
+
+    function totalScore() {
+      const avg = statConfig.reduce((sum, stat) => sum + stat.value, 0) / statConfig.length;
+      return avg.toFixed(1);
+    }
+
+    function drawCard() {
+      ctx.clearRect(0, 0, 1080, 1350);
+      const bg = ctx.createLinearGradient(0, 0, 1080, 1350);
+      bg.addColorStop(0, '#121212'); bg.addColorStop(.55, '#181512'); bg.addColorStop(1, '#0d0d0d');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, 1080, 1350);
+      const glow = ctx.createRadialGradient(850, 120, 30, 850, 120, 520);
+      glow.addColorStop(0, 'rgba(214,163,58,.28)'); glow.addColorStop(1, 'rgba(214,163,58,0)');
+      ctx.fillStyle = glow; ctx.fillRect(0, 0, 1080, 1350);
+
+      roundedRect(40, 40, 1000, 1270, 44); ctx.fillStyle = '#161616'; ctx.fill(); ctx.strokeStyle = 'rgba(214,163,58,.35)'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.fillStyle = '#f5f1e8'; ctx.font = '700 82px Oswald'; ctx.fillText(($('title').value || 'Unbenannt').toUpperCase().slice(0, 24), 76, 132);
+
+      const imageX = 76, imageY = 160, imageW = 928, imageH = 500;
+      ctx.save(); roundedRect(imageX, imageY, imageW, imageH, 34); ctx.clip();
+      if (uploadedImage) drawImageCover(uploadedImage, imageX, imageY, imageW, imageH); else defaultImageArea(imageX, imageY, imageW, imageH);
+      ctx.restore();
+
+      roundedRect(76, 690, 928, 118, 28); ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fill();
+      const meta = [['VERKÄUFER', $('seller').value || '—'], ['PREIS', $('price').value || '—'], ['HERKUNFT', $('origin').value || '—']];
+      meta.forEach((item, i) => {
+        const x = 100 + i * 300;
+        ctx.fillStyle = '#b8af9a'; ctx.font = '700 24px Oswald'; ctx.fillText(item[0], x, 732);
+        ctx.fillStyle = '#f5f1e8'; ctx.font = '600 30px Inter'; ctx.fillText(String(item[1]).slice(0, 18), x, 772);
+      });
+
+      ctx.fillStyle = '#d6a33a'; ctx.font = '700 30px Oswald'; ctx.fillText('WERTE', 76, 860);
+      roundedRect(76, 878, 928, 248, 28); ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.fill();
+      const startY = 920;
+      statConfig.forEach((stat, i) => {
+        const y = startY + i * 34;
+        ctx.fillStyle = '#f5f1e8'; ctx.font = '600 24px Inter'; ctx.fillText(stat.label, 100, y);
+        roundedRect(360, y - 16, 460, 16, 8); ctx.fillStyle = 'rgba(255,255,255,.09)'; ctx.fill();
+        roundedRect(360, y - 16, 46 * stat.value, 16, 8); ctx.fillStyle = stat.color; ctx.fill();
+        ctx.fillStyle = '#f0c86a'; ctx.font = '700 24px Oswald'; ctx.fillText(String(stat.value).padStart(2, '0'), 848, y + 1);
+      });
+
+      roundedRect(76, 1152, 720, 114, 24); ctx.fillStyle = 'rgba(255,255,255,.06)'; ctx.fill(); ctx.strokeStyle = 'rgba(214,163,58,.14)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#d6a33a'; ctx.font = '700 26px Oswald'; ctx.fillText('KURZNOTIZ', 100, 1186);
+      ctx.fillStyle = '#d9d1c3'; ctx.font = '500 22px Inter'; wrapText(($('note').value || '').slice(0, 180), 100, 1224, 670, 28, 2);
+
+      roundedRect(820, 1152, 184, 114, 24); ctx.fillStyle = '#d6a33a'; ctx.fill();
+      ctx.fillStyle = '#18130a'; ctx.font = '700 28px Oswald'; ctx.fillText('SCORE', 868, 1190);
+      ctx.font = '700 58px Oswald'; ctx.fillText(String(totalScore()), 872, 1252);
+    }
+
+    $('imageUpload').addEventListener('change', (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => { const img = new Image(); img.onload = () => { uploadedImage = img; drawCard(); }; img.src = reader.result; };
+      reader.readAsDataURL(file);
+    });
+
+    ['title', 'seller', 'price', 'origin', 'note'].forEach((id) => $(id).addEventListener('input', drawCard));
+
+    $('downloadJpeg').addEventListener('click', () => {
+      const data = canvas.toDataURL('image/jpeg', 0.95);
+      const link = document.createElement('a');
+      const fileBase = (($('title').value || 'grill-quartett').trim().toLowerCase().replace(/[^a-z0-9äöüß]+/gi, '-').replace(/^-|-$/g, '') || 'grill-quartett');
+      link.href = data; link.download = fileBase + '-1080x1350.jpeg'; document.body.appendChild(link); link.click(); link.remove();
+    });
+
+    $('resetDemo').addEventListener('click', () => {
+      $('title').value = 'Tomahawk Steak'; $('seller').value = 'Metzgerei am Markt'; $('price').value = '11,90 € / 100 g'; $('origin').value = 'Rheinland-Pfalz'; $('note').value = 'Sehr saftig, kräftiger Geschmack, starker Show-Cut für den Grillabend.';
+      [7,9,8,9,8,10].forEach((v, i) => statConfig[i].value = v);
+      buildStatControls(); drawCard();
+    });
+
+    buildStatControls(); drawCard();
+  </script>
+</body>
+</html>
